@@ -9,6 +9,7 @@ local state = {
 	win = nil,
 	previous_buf = nil,
 	previous_win = nil,
+	previous_cursorline = nil,
 	current_dir = vim.fn.getcwd(),
 	selected_files = {},
 	marked_files = {},
@@ -147,6 +148,12 @@ local function render_directory()
 		return
 	end
 
+	-- Save cursor position before rendering
+	local saved_cursor = nil
+	if state.win and vim.api.nvim_win_is_valid(state.win) then
+		saved_cursor = vim.api.nvim_win_get_cursor(state.win)
+	end
+
 	vim.api.nvim_buf_set_option(state.buf, 'modifiable', true)
 
 	-- Clear existing highlights
@@ -257,9 +264,18 @@ local function render_directory()
 
 	vim.api.nvim_buf_set_option(state.buf, 'modifiable', false)
 
-	-- Set cursor to first entry (line 3)
+	-- Restore cursor position or set to first entry
 	if state.win and vim.api.nvim_win_is_valid(state.win) then
-		vim.api.nvim_win_set_cursor(state.win, { 3, 0 })
+		if saved_cursor then
+			-- Make sure cursor is within valid range
+			local max_line = vim.api.nvim_buf_line_count(state.buf)
+			local target_line = math.min(saved_cursor[1], max_line)
+			target_line = math.max(target_line, 3) -- Don't go above line 3 (first entry)
+			vim.api.nvim_win_set_cursor(state.win, { target_line, 0 })
+		else
+			-- First time rendering, set to first entry
+			vim.api.nvim_win_set_cursor(state.win, { 3, 0 })
+		end
 	end
 end
 
@@ -648,8 +664,16 @@ end
 -- Main functions
 function M.open()
 	-- Save current buffer and window
-	state.previous_buf = vim.api.nvim_get_current_buf()
-	state.previous_win = vim.api.nvim_get_current_win()
+	local current_buf = vim.api.nvim_get_current_buf()
+	local current_win = vim.api.nvim_get_current_win()
+
+	-- Only save previous state if we're not already in Dired
+	if current_buf ~= state.buf then
+		state.previous_buf = current_buf
+		state.previous_win = current_win
+		-- Save cursorline state from the previous window
+		state.previous_cursorline = vim.api.nvim_win_get_option(current_win, 'cursorline')
+	end
 
 	-- Create buffer if it doesn't exist
 	if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
@@ -683,6 +707,9 @@ function M.open()
 	-- vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
 	vim.api.nvim_win_set_hl_ns(state.win, state.ns_id)
 
+
+	vim.api.nvim_win_set_hl_ns(state.win, state.ns_id)
+
 	-- Setup keymaps
 	setup_keymaps()
 
@@ -700,6 +727,11 @@ function M.close()
 		if current_win == state.win then
 			if state.previous_buf and vim.api.nvim_buf_is_valid(state.previous_buf) then
 				vim.api.nvim_win_set_buf(state.win, state.previous_buf)
+
+				-- Restore cursorline state to what it was before opening Dired
+				if state.previous_cursorline ~= nil then
+					vim.api.nvim_win_set_option(state.win, 'cursorline', state.previous_cursorline)
+				end
 			else
 				vim.cmd('enew')
 			end
