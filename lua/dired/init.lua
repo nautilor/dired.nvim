@@ -171,12 +171,12 @@ local function render_directory()
 	table.insert(lines, '')
 
 	-- Entries
-	for i, entry in ipairs(state.entries) do
+	for _, entry in ipairs(state.entries) do
 		local line = ''
 
 		-- Selection marker
 		local is_selected = vim.tbl_contains(state.selected_files, entry.path)
-		line = is_selected and '* ' or '  '
+		line = is_selected and '󰧞 ' or (#state.selected_files > 0 and '  ' or '  ')
 
 		-- Mark indicator (cut/copy)
 		local is_marked = false
@@ -187,7 +187,7 @@ local function render_directory()
 			end
 		end
 		if is_marked then
-			line = line .. (state.mark_operation == 'cut' and '[X] ' or '[C] ')
+			line = line .. (state.mark_operation == 'cut' and '   ' or '   ')
 		else
 			line = line .. '    '
 		end
@@ -709,7 +709,7 @@ function M.open()
 	vim.api.nvim_set_hl(0, 'DiredSelected', { fg = '#e0af68', bold = true })
 	vim.api.nvim_set_hl(0, 'DiredMarked', { fg = '#f7768e', bold = true })
 	vim.api.nvim_set_hl(0, 'DiredPath', { fg = '#7dcfff', italic = true })
-	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#323750' })
+	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#283457' })
 
 	-- Override cursorline to use full line visual highlight
 	vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
