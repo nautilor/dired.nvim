@@ -666,10 +666,10 @@ function M.open()
 	state.win = vim.api.nvim_get_current_win()
 
 	-- Set window options
-	vim.api.nvim_win_set_option(state.win, 'cursorline', true)
-	vim.api.nvim_win_set_option(state.win, 'wrap', false)
-	vim.api.nvim_win_set_option(state.win, 'number', false)
-	vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
+	-- vim.api.nvim_win_set_option(state.win, 'cursorline', true)
+	-- vim.api.nvim_win_set_option(state.win, 'wrap', false)
+	-- vim.api.nvim_win_set_option(state.win, 'number', false)
+	-- vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
 
 	-- Setup highlight groups (ls -l --color style)
 	vim.api.nvim_set_hl(0, 'DiredDirectory', { fg = '#7aa2f7', bold = true })
@@ -680,7 +680,7 @@ function M.open()
 	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#323750' })
 
 	-- Override cursorline to use full line visual highlight
-	vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
+	-- vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
 	vim.api.nvim_win_set_hl_ns(state.win, state.ns_id)
 
 	-- Setup keymaps

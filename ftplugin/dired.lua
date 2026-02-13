@@ -14,5 +14,5 @@ vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#323750' })
 vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#323750' })
 
 -- Set cursorline highlight
-vim.wo.cursorline = true
-vim.wo.cursorlineopt = 'both'
+-- vim.wo.cursorline = true
+-- vim.wo.cursorlineopt = 'both'
