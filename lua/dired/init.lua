@@ -14,6 +14,7 @@ local state = {
 	marked_files = {},
 	mark_operation = nil, -- 'cut' or 'copy'
 	entries = {},
+	ns_id = vim.api.nvim_create_namespace('dired_highlight'),
 }
 
 -- Utility functions
@@ -62,6 +63,31 @@ end
 
 local function format_time(timestamp)
 	return os.date("%b %d %H:%M", timestamp)
+end
+
+-- Update buffer paths when files are moved or renamed
+local function update_buffer_paths(old_path, new_path)
+	-- Get all loaded buffers
+	local buffers = vim.api.nvim_list_bufs()
+
+	for _, buf in ipairs(buffers) do
+		if vim.api.nvim_buf_is_loaded(buf) then
+			local buf_name = vim.api.nvim_buf_get_name(buf)
+
+			if buf_name ~= '' then
+				-- Check if buffer is the moved file or inside moved directory
+				if buf_name == old_path then
+					-- Exact match - file was moved/renamed
+					vim.api.nvim_buf_set_name(buf, new_path)
+				elseif vim.startswith(buf_name, old_path .. '/') then
+					-- Buffer is inside a moved directory
+					local relative = buf_name:sub(#old_path + 2)
+					local new_buf_path = new_path .. '/' .. relative
+					vim.api.nvim_buf_set_name(buf, new_buf_path)
+				end
+			end
+		end
+	end
 end
 
 local function scan_directory(dir)
@@ -334,6 +360,8 @@ local function paste()
 				local success = vim.loop.fs_rename(source, dest)
 				if success == 0 then
 					count = count + 1
+					-- Update buffer paths for moved files
+					update_buffer_paths(source, dest)
 				else
 					print('Failed to move: ' .. source)
 				end
@@ -427,10 +455,24 @@ local function delete_files()
 			end
 		end
 
+		local function close_buffers_for_path(path)
+			local buffers = vim.api.nvim_list_bufs()
+			for _, buf in ipairs(buffers) do
+				if vim.api.nvim_buf_is_loaded(buf) then
+					local buf_name = vim.api.nvim_buf_get_name(buf)
+					-- Close buffer if it's the deleted file or inside deleted directory
+					if buf_name == path or vim.startswith(buf_name, path .. '/') then
+						pcall(vim.api.nvim_buf_delete, buf, { force = true })
+					end
+				end
+			end
+		end
+
 		local count = 0
 		for _, path in ipairs(files_to_delete) do
 			if delete_recursive(path) then
 				count = count + 1
+				close_buffers_for_path(path)
 			else
 				print('Failed to delete: ' .. path)
 			end
@@ -458,6 +500,8 @@ local function rename_file()
 
 		if success == 0 then
 			print('Renamed to: ' .. input)
+			-- Update buffer paths for renamed files/folders
+			update_buffer_paths(entry.path, new_path)
 			render_directory()
 		else
 			print('Failed to rename')
@@ -500,11 +544,11 @@ local function setup_keymaps()
 		end
 	end, opts)
 
-	vim.keymap.set('n', 'l', enter_directory, opts)
+	vim.keymap.set('n', 'f', enter_directory, opts)
 	vim.keymap.set('n', '<Right>', enter_directory, opts)
 	vim.keymap.set('n', '<CR>', enter_directory, opts)
 
-	vim.keymap.set('n', 'h', go_up, opts)
+	vim.keymap.set('n', 'b', go_up, opts)
 	vim.keymap.set('n', '<Left>', go_up, opts)
 
 	-- Selection and operations
@@ -548,6 +592,20 @@ function M.open()
 	vim.api.nvim_win_set_option(state.win, 'wrap', false)
 	vim.api.nvim_win_set_option(state.win, 'number', false)
 	vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
+
+	-- Setup highlight groups
+	vim.cmd([[
+    highlight DiredDirectory ctermfg=Blue guifg=#569CD6 gui=bold
+    highlight DiredExecutable ctermfg=Green guifg=#4EC9B0
+    highlight DiredSelected ctermfg=Yellow guifg=#DCDCAA gui=bold
+    highlight DiredMarked ctermfg=Red guifg=#F48771 gui=bold
+    highlight DiredPath ctermfg=Cyan guifg=#4FC1FF gui=italic
+    highlight DiredCursorLine guibg=#2D2D30 ctermbg=237
+  ]])
+
+	-- Override cursorline to use full line visual highlight
+	vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
+	vim.api.nvim_set_hl(0, 'CursorLine', { link = 'DiredCursorLine' })
 
 	-- Setup keymaps
 	setup_keymaps()
