@@ -10,6 +10,10 @@ local state = {
 	previous_buf = nil,
 	previous_win = nil,
 	previous_cursorline = nil,
+	previous_wrap = nil,
+	previous_number = nil,
+	previous_relativenumber = nil,
+	previous_cursorlineopt = nil,
 	current_dir = vim.fn.getcwd(),
 	selected_files = {},
 	marked_files = {},
@@ -673,6 +677,10 @@ function M.open()
 		state.previous_win = current_win
 		-- Save cursorline state from the previous window
 		state.previous_cursorline = vim.api.nvim_win_get_option(current_win, 'cursorline')
+		state.previous_wrap = vim.api.nvim_win_get_option(current_win, 'wrap')
+		state.previous_number = vim.api.nvim_win_get_option(current_win, 'number')
+		state.previous_relativenumber = vim.api.nvim_win_get_option(current_win, 'relativenumber')
+		state.previous_cursorlineopt = vim.api.nvim_win_get_option(current_win, 'cursorlineopt')
 	end
 
 	-- Create buffer if it doesn't exist
@@ -690,10 +698,10 @@ function M.open()
 	state.win = vim.api.nvim_get_current_win()
 
 	-- Set window options
-	-- vim.api.nvim_win_set_option(state.win, 'cursorline', true)
-	-- vim.api.nvim_win_set_option(state.win, 'wrap', false)
-	-- vim.api.nvim_win_set_option(state.win, 'number', false)
-	-- vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
+	vim.api.nvim_win_set_option(state.win, 'cursorline', true)
+	vim.api.nvim_win_set_option(state.win, 'wrap', false)
+	vim.api.nvim_win_set_option(state.win, 'number', false)
+	vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
 
 	-- Setup highlight groups (ls -l --color style)
 	vim.api.nvim_set_hl(0, 'DiredDirectory', { fg = '#7aa2f7', bold = true })
@@ -704,7 +712,7 @@ function M.open()
 	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#323750' })
 
 	-- Override cursorline to use full line visual highlight
-	-- vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
+	vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
 	vim.api.nvim_win_set_hl_ns(state.win, state.ns_id)
 
 
@@ -731,6 +739,10 @@ function M.close()
 				-- Restore cursorline state to what it was before opening Dired
 				if state.previous_cursorline ~= nil then
 					vim.api.nvim_win_set_option(state.win, 'cursorline', state.previous_cursorline)
+					vim.api.nvim_win_set_option(state.win, 'wrap', state.previous_wrap)
+					vim.api.nvim_win_set_option(state.win, 'number', state.previous_number)
+					vim.api.nvim_win_set_option(state.win, 'relativenumber', state.previous_relativenumber)
+					vim.api.nvim_win_set_option(state.win, 'cursorlineopt', state.previous_cursorlineopt)
 				end
 			else
 				vim.cmd('enew')
