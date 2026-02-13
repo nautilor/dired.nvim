@@ -672,12 +672,12 @@ function M.open()
 	vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
 
 	-- Setup highlight groups (ls -l --color style)
-	vim.api.nvim_set_hl(0, 'DiredDirectory', { fg = '#5FAFFF', bold = true }) -- Bright blue for directories
-	vim.api.nvim_set_hl(0, 'DiredExecutable', { fg = '#5FFF5F', bold = true }) -- Bright green for executables
-	vim.api.nvim_set_hl(0, 'DiredSelected', { fg = '#FFFF5F', bold = true }) -- Bright yellow for selected
-	vim.api.nvim_set_hl(0, 'DiredMarked', { fg = '#FF5F5F', bold = true })   -- Bright red for marked
-	vim.api.nvim_set_hl(0, 'DiredPath', { fg = '#5FFFFF', italic = true })   -- Cyan for path
-	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#2A2A2A' })            -- Dark gray for cursor line
+	vim.api.nvim_set_hl(0, 'DiredDirectory', { fg = '#7aa2f7', bold = true })
+	vim.api.nvim_set_hl(0, 'DiredExecutable', { fg = '#73daca', bold = true })
+	vim.api.nvim_set_hl(0, 'DiredSelected', { fg = '#e0af68', bold = true })
+	vim.api.nvim_set_hl(0, 'DiredMarked', { fg = '#f7768e', bold = true })
+	vim.api.nvim_set_hl(0, 'DiredPath', { fg = '#7dcfff', italic = true })
+	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#323750' })
 
 	-- Override cursorline to use full line visual highlight
 	vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
