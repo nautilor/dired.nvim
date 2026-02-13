@@ -693,16 +693,36 @@ end
 
 function M.close()
 	if state.win and vim.api.nvim_win_is_valid(state.win) then
-		if state.previous_buf and vim.api.nvim_buf_is_valid(state.previous_buf) then
-			vim.api.nvim_set_current_buf(state.previous_buf)
-		else
-			vim.cmd('enew')
+		-- Get current window
+		local current_win = vim.api.nvim_get_current_win()
+
+		-- Only close if we're actually in the Dired window
+		if current_win == state.win then
+			if state.previous_buf and vim.api.nvim_buf_is_valid(state.previous_buf) then
+				vim.api.nvim_win_set_buf(state.win, state.previous_buf)
+			else
+				vim.cmd('enew')
+			end
 		end
 	end
+
+	-- Don't set state.win to nil, just keep it for next time
 end
 
 function M.toggle()
-	if state.win and vim.api.nvim_win_is_valid(state.win) and vim.api.nvim_get_current_win() == state.win then
+	-- Check if Dired buffer is currently visible in any window
+	local dired_visible = false
+	if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+		for _, win in ipairs(vim.api.nvim_list_wins()) do
+			if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == state.buf then
+				dired_visible = true
+				state.win = win
+				break
+			end
+		end
+	end
+
+	if dired_visible then
 		M.close()
 	else
 		M.open()
