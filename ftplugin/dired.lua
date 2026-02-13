@@ -4,25 +4,14 @@ if vim.b.did_ftplugin then
 end
 vim.b.did_ftplugin = 1
 
--- Highlight groups
-vim.cmd([[
-  highlight DiredDirectory ctermfg=Blue guifg=#569CD6 gui=bold
-  highlight DiredExecutable ctermfg=Green guifg=#4EC9B0
-  highlight DiredSelected ctermfg=Yellow guifg=#DCDCAA gui=bold
-  highlight DiredMarked ctermfg=Red guifg=#F48771 gui=bold
-  highlight DiredPath ctermfg=Cyan guifg=#4FC1FF gui=italic
-  highlight DiredCursorLine guibg=#2D2D30 ctermbg=237
-]])
-
--- Apply syntax matching
-vim.cmd([[
-  syntax clear
-  syntax match DiredDirectory /\/\s*$/
-  syntax match DiredExecutable /^.\{-}x.\{-}\s\+\zs.\+$/
-  syntax match DiredSelected /^\*\s/
-  syntax match DiredMarked /\[X\]\|\[C\]/
-  syntax match DiredPath /^\s\+\/.\+$/
-]])
+-- Highlight groups (ls -l --color style)
+vim.api.nvim_set_hl(0, 'DiredDirectory', { fg = '#5FAFFF', bold = true })
+vim.api.nvim_set_hl(0, 'DiredExecutable', { fg = '#5FFF5F', bold = true })
+vim.api.nvim_set_hl(0, 'DiredSelected', { fg = '#FFFF5F', bold = true })
+vim.api.nvim_set_hl(0, 'DiredMarked', { fg = '#FF5F5F', bold = true })
+vim.api.nvim_set_hl(0, 'DiredPath', { fg = '#5FFFFF', italic = true })
+vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#2A2A2A' })
+vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#2A2A2A' })
 
 -- Set cursorline highlight
 vim.wo.cursorline = true

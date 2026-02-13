@@ -149,6 +149,9 @@ local function render_directory()
 
 	vim.api.nvim_buf_set_option(state.buf, 'modifiable', true)
 
+	-- Clear existing highlights
+	vim.api.nvim_buf_clear_namespace(state.buf, state.ns_id, 0, -1)
+
 	state.entries = scan_directory(state.current_dir)
 	local lines = {}
 
@@ -208,6 +211,50 @@ local function render_directory()
 	end
 
 	vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, lines)
+
+	-- Apply highlights
+	-- Highlight header path
+	vim.api.nvim_buf_add_highlight(state.buf, state.ns_id, 'DiredPath', 0, 0, -1)
+
+	-- Highlight entries
+	for i, entry in ipairs(state.entries) do
+		local line_num = i + 1 -- +2 for header, -1 for 0-based indexing
+		local line = lines[line_num + 1]
+
+		-- Highlight selection marker
+		local is_selected = vim.tbl_contains(state.selected_files, entry.path)
+		if is_selected then
+			vim.api.nvim_buf_add_highlight(state.buf, state.ns_id, 'DiredSelected', line_num, 0, 1)
+		end
+
+		-- Highlight mark indicator
+		local is_marked = false
+		for _, marked in ipairs(state.marked_files) do
+			if marked.path == entry.path then
+				is_marked = true
+				break
+			end
+		end
+		if is_marked then
+			vim.api.nvim_buf_add_highlight(state.buf, state.ns_id, 'DiredMarked', line_num, 2, 6)
+		end
+
+		-- Find where the filename starts
+		local name_start = line:find(entry.name or '%.%.')
+		if name_start then
+			-- Highlight directories
+			if entry.type == 'directory' or entry.is_parent then
+				vim.api.nvim_buf_add_highlight(state.buf, state.ns_id, 'DiredDirectory', line_num, name_start - 1, -1)
+			else
+				-- Check if executable
+				local perms = format_permissions(entry.mode or 0)
+				if perms:match('x') then
+					vim.api.nvim_buf_add_highlight(state.buf, state.ns_id, 'DiredExecutable', line_num, name_start - 1, -1)
+				end
+			end
+		end
+	end
+
 	vim.api.nvim_buf_set_option(state.buf, 'modifiable', false)
 
 	-- Set cursor to first entry (line 3)
@@ -291,6 +338,21 @@ local function mark_cut()
 		return
 	end
 
+	-- Check if already marked for cut
+	local already_marked = false
+	for i, marked in ipairs(state.marked_files) do
+		if marked.path == entry.path and state.mark_operation == 'cut' then
+			-- Unmark
+			table.remove(state.marked_files, i)
+			if #state.marked_files == 0 then
+				state.mark_operation = nil
+			end
+			render_directory()
+			print('Unmarked: ' .. entry.name)
+			return
+		end
+	end
+
 	local files_to_mark = {}
 	if #state.selected_files > 0 then
 		for _, path in ipairs(state.selected_files) do
@@ -312,6 +374,21 @@ local function mark_copy()
 	local entry = get_current_entry()
 	if not entry or entry.is_parent then
 		return
+	end
+
+	-- Check if already marked for copy
+	local already_marked = false
+	for i, marked in ipairs(state.marked_files) do
+		if marked.path == entry.path and state.mark_operation == 'copy' then
+			-- Unmark
+			table.remove(state.marked_files, i)
+			if #state.marked_files == 0 then
+				state.mark_operation = nil
+			end
+			render_directory()
+			print('Unmarked: ' .. entry.name)
+			return
+		end
 	end
 
 	local files_to_mark = {}
@@ -544,12 +621,13 @@ local function setup_keymaps()
 		end
 	end, opts)
 
-	vim.keymap.set('n', 'f', enter_directory, opts)
-	vim.keymap.set('n', '<Right>', enter_directory, opts)
+	-- Enter directory or open file
 	vim.keymap.set('n', '<CR>', enter_directory, opts)
+	vim.keymap.set('n', 'l', enter_directory, opts)
 
-	vim.keymap.set('n', 'b', go_up, opts)
-	vim.keymap.set('n', '<Left>', go_up, opts)
+	-- Go back (parent directory)
+	vim.keymap.set('n', '<BS>', go_up, opts)
+	vim.keymap.set('n', 'h', go_up, opts)
 
 	-- Selection and operations
 	vim.keymap.set('n', '<Tab>', toggle_selection, opts)
@@ -593,19 +671,17 @@ function M.open()
 	vim.api.nvim_win_set_option(state.win, 'number', false)
 	vim.api.nvim_win_set_option(state.win, 'relativenumber', false)
 
-	-- Setup highlight groups
-	vim.cmd([[
-    highlight DiredDirectory ctermfg=Blue guifg=#569CD6 gui=bold
-    highlight DiredExecutable ctermfg=Green guifg=#4EC9B0
-    highlight DiredSelected ctermfg=Yellow guifg=#DCDCAA gui=bold
-    highlight DiredMarked ctermfg=Red guifg=#F48771 gui=bold
-    highlight DiredPath ctermfg=Cyan guifg=#4FC1FF gui=italic
-    highlight DiredCursorLine guibg=#2D2D30 ctermbg=237
-  ]])
+	-- Setup highlight groups (ls -l --color style)
+	vim.api.nvim_set_hl(0, 'DiredDirectory', { fg = '#5FAFFF', bold = true }) -- Bright blue for directories
+	vim.api.nvim_set_hl(0, 'DiredExecutable', { fg = '#5FFF5F', bold = true }) -- Bright green for executables
+	vim.api.nvim_set_hl(0, 'DiredSelected', { fg = '#FFFF5F', bold = true }) -- Bright yellow for selected
+	vim.api.nvim_set_hl(0, 'DiredMarked', { fg = '#FF5F5F', bold = true })   -- Bright red for marked
+	vim.api.nvim_set_hl(0, 'DiredPath', { fg = '#5FFFFF', italic = true })   -- Cyan for path
+	vim.api.nvim_set_hl(0, 'DiredCursorLine', { bg = '#2A2A2A' })            -- Dark gray for cursor line
 
 	-- Override cursorline to use full line visual highlight
 	vim.api.nvim_win_set_option(state.win, 'cursorlineopt', 'both')
-	vim.api.nvim_set_hl(0, 'CursorLine', { link = 'DiredCursorLine' })
+	vim.api.nvim_win_set_hl_ns(state.win, state.ns_id)
 
 	-- Setup keymaps
 	setup_keymaps()
