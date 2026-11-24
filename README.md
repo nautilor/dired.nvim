@@ -233,6 +233,7 @@ Like in the emacs preset, commands work on marked files, else the file under the
 | Key | Does | Vim idea |
 |-----|------|----------|
 | `<Tab>` | mark / unmark the file, move down | |
+| `q` / `<Esc>` | close dired | |
 | `U` / `~` | unmark all / toggle all marks | |
 | `g/` | mark by name regexp | like `:g/` |
 | `]m` / `[m` | next / previous marked file | |
