@@ -46,6 +46,17 @@ Two key sets ship with the plugin. Pick one with `preset` (default `emacs`) and 
 | `'emacs'` (default) | the real dired keys, 1:1 | [Emacs keys](#emacs-keys-default) |
 | `'oil'` | neovim-like keys, the same as oil.nvim | [Oil keys](#oil-keys) |
 
+Choose it in `setup` (or lazy's `opts`):
+
+```lua
+opts = {
+  preset = 'emacs',     -- 'emacs' (default) | 'oil'
+  oil_extras = true,    -- only with preset = 'oil': also bind the vim-style file commands
+                        -- (false = just oil's own 16 keys)
+  keys = {},            -- any preset: { [lhs] = 'action' | false } to add, change or remove keys
+}
+```
+
 Press `h` (emacs) or `g?` (oil) inside a dired buffer for the live list.
 Whatever the preset, `keys = { [lhs] = 'action' | false }` adds, changes or removes single keys.
 
@@ -263,7 +274,7 @@ by editing names), `gs` toggles name/date instead of asking, and `g.` toggles `l
 | `garbage_files_regexp` | aux/bak/dvi/log/orig/rej/toc | `dired-garbage-files-regexp` |
 | `hide_details` | `false` | `dired-hide-details-mode` |
 | `colors` | all on | colour listing columns: `true`/`false`, or `{ permissions, links, owner, group, size, date, filetype }` toggles (`colors = { owner = false }` turns just that one off) |
-| `preset` | `'emacs'` | `'emacs'` or `'oil'` (see below) |
+| `preset` | `'emacs'` | `'emacs'` or `'oil'`, see [Keys](#keys) |
 | `oil_extras` | `true` | with `preset = 'oil'`: also bind the vim-style dired commands |
 | `keys` | `{}` | key overrides on top of the preset |
 
