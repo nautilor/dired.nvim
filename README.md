@@ -32,6 +32,18 @@ Tests: `nvim --headless -u NONE -l tests/run.lua`
 }
 ```
 
+## Open dired for `nvim /path/` and `nvim .`
+
+On by default (`hijack_netrw = true`): directory buffers (`nvim dir`, `nvim .`, `:e dir`) open as dired,
+and netrw is switched off. The only requirement is that the plugin loads at startup, so with
+lazy.nvim use `lazy = false` (a lazy-loaded plugin would start too late for `nvim dir`):
+
+```lua
+{ dir = '~/Sources/PERSONAL/dired.nvim', lazy = false, opts = {} }
+```
+
+Set `hijack_netrw = false` to keep netrw and only use `:Dired`.
+
 ## Commands
 
 `:Dired [dir]`, `:DiredJump` (= `dired-jump`, cursor lands on the current file).

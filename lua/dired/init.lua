@@ -65,7 +65,10 @@ function M.setup(opts)
   })
 
   if config.opts.hijack_netrw then
-    -- netrw would fight us for directory buffers
+    -- netrw would fight us for directory buffers: stop it if it has not loaded yet
+    -- (lazy.nvim runs setup before plugin/ files are sourced) ...
+    vim.g.loaded_netrwPlugin = 1
+    -- ... and drop its directory autocmds if it already did
     pcall(api.nvim_del_augroup_by_name, 'FileExplorer')
     -- directory already open at startup / when setup runs late
     local cur = api.nvim_get_current_buf()
