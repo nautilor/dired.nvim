@@ -6,7 +6,7 @@ vim.opt.termguicolors = true
 vim.g.mapleader = ' '
 
 local function load()
-  require('dired').setup({})
+  require('dired').setup({ preset = vim.env.DIRED_PRESET or 'emacs' })
 end
 load()
 

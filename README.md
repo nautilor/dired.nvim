@@ -3,19 +3,21 @@
 Emacs `dired` for Neovim, in Lua. Same buffer layout (`ls -al` listing with a mark
 column, subdirectories inserted into the same buffer), same keys, same semantics
 (marked files, else current file, else next N files with a count).
+Prefer neovim-like keys? There is an [oil.nvim style preset](#oil-keys) too.
 
 Requires Neovim >= 0.10 (developed on 0.12), a Unix `ls` (GNU or BSD), Linux/macOS.
 
 ## Try it without touching your config
 
 ```sh
-dev/run.sh            # throwaway sandbox tree, isolated nvim (NVIM_APPNAME=dired-dev)
-dev/run.sh --keep     # keep the sandbox afterwards
-dev/run.sh ~/some/dir # real directory (operations are real!)
+dev/run.sh                      # throwaway sandbox tree, isolated nvim (NVIM_APPNAME=dired-dev)
+dev/run.sh --keep               # keep the sandbox afterwards
+dev/run.sh ~/some/dir           # real directory (operations are real!)
+DIRED_PRESET=oil dev/run.sh     # try the oil.nvim key preset
 ```
 
 Inside that nvim: `:DiredReload` reloads the plugin code after you edit it, `-` is
-`dired-jump`, `<space>d` opens dired on the cwd.
+`dired-jump` outside dired, `<space>d` opens dired on the cwd.
 
 Tests: `nvim --headless -u NONE -l tests/run.lua`
 
@@ -25,7 +27,7 @@ Tests: `nvim --headless -u NONE -l tests/run.lua`
 {
   dir = '~/Sources/PERSONAL/dired.nvim',   -- or the git url once pushed
   lazy = false,                            -- needed for directory hijacking at startup
-  opts = {},
+  opts = {},                               -- e.g. { preset = 'oil' }
   keys = { { '-', '<Cmd>DiredJump<CR>', desc = 'dired-jump' } },
 }
 ```
@@ -37,11 +39,24 @@ Lua: `require('dired').open(dir)`, `require('dired').jump()`.
 
 ## Keys
 
-Learn it in steps. Step 1 is enough to browse; each next step adds power.
-Keys are the emacs dired ones. A number before a key (`3m`) means "do it for the next 3 files".
-Keys written with a space between them (`% m`) are typed without it (`%m`). Press `h` in a dired buffer for the full list, `?` for a one-line reminder.
+Two key sets ship with the plugin. Pick one with `preset` (default `emacs`) and learn it in steps:
 
-### 1. Get around
+| Preset | For | Section |
+|--------|-----|---------|
+| `'emacs'` (default) | the real dired keys, 1:1 | [Emacs keys](#emacs-keys-default) |
+| `'oil'` | neovim-like keys, the same as oil.nvim | [Oil keys](#oil-keys) |
+
+Press `h` (emacs) or `g?` (oil) inside a dired buffer for the live list.
+Whatever the preset, `keys = { [lhs] = 'action' | false }` adds, changes or removes single keys.
+
+### Emacs keys (default)
+
+Step 1 is enough to browse; each next step adds power.
+A number before a key (`3m`) means "do it for the next 3 files".
+Keys written with a space between them (`% m`) are typed without it (`%m`).
+`?` shows a one-line reminder.
+
+#### 1. Get around
 
 | Key | Does |
 |-----|------|
@@ -57,7 +72,7 @@ Keys written with a space between them (`% m`) are typed without it (`%m`). Pres
 | `g` | refresh the listing (marks are kept) |
 | `q` | quit |
 
-### 2. Mark files
+#### 2. Mark files
 
 Most commands work on **marked** files; with no marks they work on the file under the cursor.
 
@@ -75,7 +90,7 @@ Most commands work on **marked** files; with no marks they work on the file unde
 | `* s` | mark everything in this subdirectory |
 | `* c` | change one kind of mark into another |
 
-### 3. Manage files
+#### 3. Manage files
 
 | Key | Does |
 |-----|------|
@@ -91,7 +106,7 @@ Most commands work on **marked** files; with no marks they work on the file unde
 
 Safer delete, emacs style: press `d` on files to *flag* them (shown as `D`), look over the list, then `x` deletes all flagged files.
 
-### 4. Pick files with patterns
+#### 4. Pick files with patterns
 
 Patterns are emacs regexps (case-insensitive by default).
 
@@ -108,9 +123,9 @@ Patterns are emacs regexps (case-insensitive by default).
 | `.` | flag old numbered backups (`foo.~3~`) |
 | `% &` | flag garbage files (`.log`, `.bak`, `.orig`...) |
 
-Add a count to match the full path instead of just the name (`1% m`, typed without the space).
+Add a count to match the full path instead of just the name (`1 % m`).
 
-### 5. Run things
+#### 5. Run things
 
 | Key | Does |
 |-----|------|
@@ -126,7 +141,7 @@ Add a count to match the full path instead of just the name (`1% m`, typed witho
 
 Shell command rules: `*` in the command is replaced by all the files at once, `?` runs it once per file, with neither the command runs once per file with the name appended.
 
-### 6. Subdirectories in one buffer
+#### 6. Subdirectories in one buffer
 
 | Key | Does |
 |-----|------|
@@ -137,19 +152,19 @@ Shell command rules: `*` in the command is replaced by all the files at once, `?
 | `C-M-n` / `C-M-p` | next / previous subdirectory |
 | `C-M-u` / `C-M-d` | up to the parent / down to a child subdirectory listing |
 
-### 7. View options
+#### 7. View options
 
 | Key | Does |
 |-----|------|
 | `s` | switch sorting between name and date (with a count: edit the `ls` switches) |
 | `(` | hide / show details (permissions, owner, size, date) |
 
-### 8. Edit names like text (wdired)
+#### 8. Edit names like text (wdired)
 
 `C-x C-q` makes the file names editable. Change them with any vim command, then
-`C-c C-c` to rename for real or `C-c C-k` to cancel.
+`:w` (or `C-c C-c`) to rename for real, or `C-c C-k` to cancel.
 
-### Key conflicts with vim
+### Emacs keys vs vim keys
 
 Keeping the emacs keys means `j`, `k`, `g`, `G`, `s`, `h` and `l` are dired commands in these buffers.
 `g` is refresh, so `gg` has its own binding but other `g…` commands are shadowed.
@@ -160,6 +175,77 @@ opts = { keys = { j = false, k = false, ['<leader>j'] = 'goto_file', ['<leader>k
 ```
 
 Action names are in `lua/dired/actions.lua` (`def('name', ...)`) and shown by `h`.
+
+### Oil keys
+
+`preset = 'oil'` replaces the emacs keys with oil.nvim's default keymaps, so `j`, `k`, `gg`, `s`, ... are plain vim again:
+
+```lua
+opts = { preset = 'oil' }
+```
+
+| Key | Does |
+|-----|------|
+| `g?` | show key help |
+| `<CR>` | open file / enter directory |
+| `<C-s>` / `<C-h>` / `<C-t>` | open in vertical split / horizontal split / new tab |
+| `<C-p>` | preview in the other window (focus stays) |
+| `<C-c>` | close |
+| `<C-l>` | refresh |
+| `-` | parent directory |
+| `_` | open dired on the cwd |
+| `` ` `` / `g~` | `:cd` / `:tcd` to this directory |
+| `gs` | toggle sort (name / date) |
+| `gx` | open with the system app |
+| `g.` | show / hide dotfiles |
+| `g\` | open the trash directory |
+
+#### Oil preset: dired commands with vim-style keys
+
+On top of oil's keys the preset binds the dired commands to keys that read like vim.
+Everyday things get single keys (`<Tab>` `m` `r` `c` `a` `o` `dd`), the rest live under `g`. None of them collide with oil's keys.
+Like in the emacs preset, commands work on marked files, else the file under the cursor
+(a count, `3c`, means the next 3 files).
+
+| Key | Does | Vim idea |
+|-----|------|----------|
+| `<Tab>` | mark / unmark the file, move down | |
+| `U` / `~` | unmark all / toggle all marks | |
+| `g/` | mark by name regexp | like `:g/` |
+| `]m` / `[m` | next / previous marked file | |
+| `m` | **m**ove (asks for the target directory) | |
+| `r` | **r**ename in place (several files: move) | |
+| `c` | **c**opy | |
+| `dd` | delete | **d**elete |
+| `a` | **a**dd a file; end the name with `/` for a directory (`a/b/` creates both) | **a**ppend |
+| `o` | new directory | **o**pen new |
+| `yp` / `yP` | copy the file name / full path to the clipboard | **y**ank **p**ath |
+| `ge` | edit names in place (wdired), `:w` applies | |
+| `i` | insert a subdirectory listing | **i**nsert |
+| `gl` / `gr` / `gh` | symlink / relative symlink / hard link | **l**ink, **r**elative, **h**ard |
+| `gm` / `go` / `gG` / `gT` | chmod / chown / chgrp / touch | **m**ode, **o**wner, **G**roup, **T**ime |
+| `gz` / `gZ` | compress each / compress into one archive | **z**ip |
+| `gR` / `gC` | rename / copy by regexp (`\1`, `\&`) | |
+| `gU` / `gu` | upper / lower-case names | same as vim's `gU` / `gu` |
+| `gb` / `g&` | flag backup files / garbage files for deletion | |
+| `!` / `&` | shell command / in the background | same as vim's `!` |
+| `=` | diff against another file | |
+| `gA` / `gQ` | regexp search / replace in marked files | |
+| `za` / `zM` / `zR` | hide-show this subdirectory / hide all / show all | folds |
+| `]]` / `[[` | next / previous subdirectory | |
+| `[u` / `]d` | up to the parent / down to a child subdirectory listing | |
+| `gK` | remove lines from the buffer (files stay) | |
+| `g,` | hide / show details | |
+
+Want only oil's own keys? Set `oil_extras = false`.
+Want different keys? `keys = { ['<leader>r'] = 'rename', c = false }` on top of the preset.
+
+Differences from oil: dired is not an editable buffer (use `ge` to rename
+by editing names), `gs` toggles name/date instead of asking, and `g.` toggles `ls -a`.
+
+> Shadowed Neovim keys in these buffers: `<Tab>` (= `<C-i>`, jump forward), `gr` (= the `grr`/`grn`/... LSP
+> defaults of Neovim 0.11+), `ge`, `gh`, and the edit keys `m r c a o`. Dired buffers are read-only,
+> so nothing useful is lost. Set `oil_extras = false` or override with `keys` if it bothers you.
 
 ## Options (`setup{}`)
 
@@ -177,7 +263,9 @@ Action names are in `lua/dired/actions.lua` (`def('name', ...)`) and shown by `h
 | `garbage_files_regexp` | aux/bak/dvi/log/orig/rej/toc | `dired-garbage-files-regexp` |
 | `hide_details` | `false` | `dired-hide-details-mode` |
 | `colors` | all on | colour listing columns: `true`/`false`, or `{ permissions, links, owner, group, size, date, filetype }` toggles (`colors = { owner = false }` turns just that one off) |
-| `keys` | `{}` | key overrides |
+| `preset` | `'emacs'` | `'emacs'` or `'oil'` (see below) |
+| `oil_extras` | `true` | with `preset = 'oil'`: also bind the vim-style dired commands |
+| `keys` | `{}` | key overrides on top of the preset |
 
 Highlight groups (all `default` links, override them in your colorscheme):
 

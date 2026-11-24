@@ -151,6 +151,22 @@ actions.mark_containing.fn()
 -- docs/notes.txt is in subdir, top-level has none
 actions.unmark_all.fn()
 
+-- toggle_mark / rename_here (oil preset actions)
+goto_name('README.md')
+actions.toggle_mark.fn()
+eq(mark_of('README.md'), '*', 'tab marks')
+goto_name('README.md')
+actions.toggle_mark.fn()
+eq(mark_of('README.md'), ' ', 'tab unmarks')
+goto_name('README.md')
+answers = { 'READ.md' }
+actions.rename_here.fn()
+ok(util.exists(dir .. '/READ.md') and not util.exists(dir .. '/README.md'), 'r renames in place')
+goto_name('READ.md')
+answers = { 'README.md' }
+actions.rename_here.fn()
+ok(util.exists(dir .. '/README.md'), 'r renames back')
+
 -- copy ----------------------------------------------------------------------
 goto_name('README.md')
 answers = { dir .. '/docs/' }
@@ -310,6 +326,17 @@ api.nvim_buf_set_text(b, ln - 1, c0, ln - 1, #text, { 'runner.sh' })
 require('dired.wdired').commit(b)
 ok(util.exists(dir .. '/runner.sh') and not util.exists(dir .. '/run.sh'), 'wdired renames on commit')
 ok(not vim.bo[b].modifiable, 'wdired leaves buffer read-only')
+
+-- wdired via :w
+require('dired.wdired').enter(b)
+ln = line_of('runner.sh')
+text = api.nvim_buf_get_lines(b, ln - 1, ln, false)[1]
+c0 = text:find('runner%.sh$') - 1
+api.nvim_buf_set_text(b, ln - 1, c0, ln - 1, #text, { 'run2.sh' })
+api.nvim_set_current_buf(b)
+vim.cmd('write')
+ok(util.exists(dir .. '/run2.sh') and not util.exists(dir .. '/runner.sh'), 'wdired :w commits')
+ok(vim.bo[b].buftype == 'nofile' and not vim.bo[b].modifiable, 'wdired :w leaves clean state')
 
 -- regexp conversion -----------------------------------------------------------
 local m = util.compile('\\.\\(?:png\\|jpg\\)\\\'')

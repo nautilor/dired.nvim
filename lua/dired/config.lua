@@ -34,6 +34,11 @@ M.defaults = {
     date = true,
     filetype = true,
   },
+  -- key preset: 'emacs' (1:1 dired-mode-map) | 'oil' (oil.nvim default keymaps)
+  preset = 'emacs',
+  -- with preset = 'oil': also bind vim-style keys for the dired file commands
+  -- (c rename, yy copy, dd delete, ...). false = only oil's own keys.
+  oil_extras = true,
   -- key overrides: { [lhs] = 'action_name' | false }
   keys = {},
 }

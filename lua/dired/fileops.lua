@@ -290,6 +290,12 @@ SPECS.rename = {
   rename = true,
   fn = move_tree,
 }
+SPECS.rename_here = {
+  name = 'Rename',
+  keep = true,
+  rename = true,
+  fn = move_tree,
+}
 SPECS.symlink = {
   name = 'Symlink',
   marker = 'S',
@@ -336,6 +342,28 @@ local function create(kind)
       perform(b, files, dst_for, spec)
     end
   end
+end
+
+--- `r` (oil preset): rename one file in place; several files fall back to move.
+function M.rename_here(b, files)
+  if #files ~= 1 then
+    return M.rename(b, files)
+  end
+  local f = files[1]
+  if not check_dots(files) then
+    return
+  end
+  local to = util.ask(('Rename %s to: '):format(f.name), f.name, 'file')
+  if not to or to == '' or to == f.name then
+    return
+  end
+  local dst = util.abs(to, f.dir)
+  if util.is_dir(dst) and dst ~= f.path then
+    dst = util.join(dst, f.name)
+  end
+  perform(b, files, function()
+    return dst
+  end, SPECS.rename_here)
 end
 
 M.copy = create('copy')

@@ -110,9 +110,95 @@ M.defaults = {
   ['h'] = 'help',
 }
 
---- defaults + user overrides, `false` entries removed
+-- oil.nvim's default keymaps, mapped to the closest dired action.
+-- (oil: g? select <C-s> <C-h> <C-t> <C-p> <C-c> <C-l> - _ ` g~ gs gx g. g\\)
+M.oil = {
+  ['g?'] = 'help',
+  ['<CR>'] = 'find_file',
+  ['<C-s>'] = 'find_file_vsplit',
+  ['<C-h>'] = 'find_file_split',
+  ['<C-t>'] = 'find_file_tab',
+  ['<C-p>'] = 'display_file',
+  ['<C-c>'] = 'quit',
+  ['<C-l>'] = 'revert',
+  ['-'] = 'up_directory',
+  ['_'] = 'open_cwd',
+  ['`'] = 'cd',
+  ['g~'] = 'tcd',
+  ['gs'] = 'sort_toggle',
+  ['gx'] = 'browse_url',
+  ['g.'] = 'toggle_hidden',
+  ['g\\'] = 'toggle_trash',
+}
+
+-- Vim-flavoured keys for the dired commands, added to the oil preset.
+-- Rule of thumb: vim verbs for the common things (c copy, dd delete,
+-- a/o add new), `g`-prefix for the rest. None collide with oil's keys.
+M.oil_extras = {
+  -- marks
+  ['<Tab>'] = 'toggle_mark', -- mark / unmark the file, move down
+  ['U'] = 'unmark_all',
+  ['~'] = 'toggle_marks',
+  ['g/'] = 'mark_regexp',
+  [']m'] = 'next_marked',
+  ['[m'] = 'prev_marked',
+  -- everyday file operations
+  ['m'] = 'move',
+  ['r'] = 'rename_here',
+  ['c'] = 'copy',
+  ['dd'] = 'delete',
+  ['a'] = 'create_file', -- end the name with / for a directory
+  ['o'] = 'create_directory',
+  ['yp'] = 'copy_filename', -- yank path (name)
+  ['yP'] = 'copy_filename_abs', -- yank full path
+  ['ge'] = 'wdired', -- edit names in place
+  ['i'] = 'insert_subdir',
+  -- links, permissions
+  ['gl'] = 'symlink',
+  ['gr'] = 'relsymlink',
+  ['gh'] = 'hardlink',
+  ['gm'] = 'chmod',
+  ['go'] = 'chown',
+  ['gG'] = 'chgrp',
+  ['gT'] = 'touch',
+  ['gz'] = 'compress',
+  ['gZ'] = 'compress_to',
+  -- by pattern
+  ['gR'] = 'rename_regexp',
+  ['gC'] = 'copy_regexp',
+  ['gU'] = 'upcase',
+  ['gu'] = 'downcase',
+  ['gb'] = 'flag_backups',
+  ['g&'] = 'flag_garbage',
+  -- run things
+  ['!'] = 'shell_command',
+  ['&'] = 'async_shell_command',
+  ['='] = 'diff',
+  ['gA'] = 'find_regexp',
+  ['gQ'] = 'query_replace',
+  -- subdirectories and view
+  ['za'] = 'hide_subdir',
+  ['zM'] = 'hide_all',
+  ['zR'] = 'show_all',
+  [']]'] = 'next_subdir',
+  ['[['] = 'prev_subdir',
+  ['[u'] = 'tree_up',
+  [']d'] = 'tree_down',
+  ['gK'] = 'kill_lines',
+  ['g,'] = 'toggle_details',
+}
+
+--- preset + user overrides, `false` entries removed
 function M.merged()
-  local res = vim.deepcopy(M.defaults)
+  local res
+  if config.opts.preset == 'oil' then
+    res = vim.deepcopy(config.opts.oil_extras and M.oil_extras or {})
+    for lhs, action in pairs(M.oil) do
+      res[lhs] = action
+    end
+  else
+    res = vim.deepcopy(M.defaults)
+  end
   for lhs, action in pairs(config.opts.keys or {}) do
     res[lhs] = action or nil
   end

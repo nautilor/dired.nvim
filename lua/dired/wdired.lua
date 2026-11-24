@@ -8,6 +8,7 @@ local M = {}
 
 local ns = api.nvim_create_namespace('dired_wdired')
 local state = {} -- buf -> { [extmark id] = entry }
+local write_au = {} -- buf -> BufWriteCmd autocmd id
 
 function M.active(b)
   return vim.b[b].dired_wdired == true
@@ -32,6 +33,14 @@ function M.enter(b)
     end
   end
   state[b] = items
+  -- `:w` applies the changes
+  vim.bo[b].buftype = 'acwrite'
+  write_au[b] = api.nvim_create_autocmd('BufWriteCmd', {
+    buffer = b,
+    callback = function()
+      M.commit(b)
+    end,
+  })
   require('dired.keymaps').clear(b)
   local function map(lhs, fn)
     vim.keymap.set('n', lhs, fn, { buffer = b, silent = true, desc = 'wdired' })
@@ -45,12 +54,17 @@ function M.enter(b)
   map('<C-c><Esc>', function()
     M.abort(b)
   end)
-  util.msg('Press C-c C-c to finish editing, C-c C-k to abort')
+  util.msg('Edit the names, then :w (or C-c C-c) to apply, C-c C-k to abort')
 end
 
 local function leave(b)
   api.nvim_buf_clear_namespace(b, ns, 0, -1)
   state[b] = nil
+  if write_au[b] then
+    pcall(api.nvim_del_autocmd, write_au[b])
+    write_au[b] = nil
+  end
+  vim.bo[b].buftype = 'nofile'
   vim.b[b].dired_wdired = nil
   vim.bo[b].modifiable = false
   vim.bo[b].modified = false

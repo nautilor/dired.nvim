@@ -5,6 +5,8 @@
 #   dev/run.sh /some/dir    -> opens that directory (careful: ops are real!)
 #   dev/run.sh --keep       -> sandbox is not deleted afterwards
 #
+#   DIRED_PRESET=oil dev/run.sh  -> try the oil.nvim key preset
+#
 # Inside: :DiredReload reloads the plugin code, `-` = dired-jump, <space>d = dired cwd.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

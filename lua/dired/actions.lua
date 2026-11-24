@@ -264,6 +264,10 @@ def('hide_all', 'dired-hide-all', function()
   end
 end)
 
+def('show_all', 'show all hidden subdirectories', function()
+  pcall(vim.cmd, '%foldopen!')
+end)
+
 def('kill_lines', 'dired-do-kill-lines', function()
   local b = B()
   local cur = lnum()
@@ -315,6 +319,10 @@ end)
 local function visit(path, how)
   local b = B()
   local old = b
+  if how == 'vsplit' or how == 'split' or how == 'tab' then
+    vim.cmd(how == 'tab' and 'tab split' or how)
+    how = 'edit'
+  end
   if how == 'other' or how == 'display' then
     local cur = api.nvim_get_current_win()
     local wins = api.nvim_tabpage_list_wins(0)
@@ -364,6 +372,9 @@ end
 def('find_file', 'dired-find-file', find_current('edit'))
 def('find_file_other_window', 'dired-find-file-other-window', find_current('other'))
 def('display_file', 'dired-display-file', find_current('display'))
+def('find_file_vsplit', 'open in vertical split', find_current('vsplit'))
+def('find_file_split', 'open in horizontal split', find_current('split'))
+def('find_file_tab', 'open in new tab', find_current('tab'))
 def('view_file', 'dired-view-file', find_current('view'))
 def('find_alternate_file', 'dired-find-alternate-file', find_current('alternate'))
 
@@ -377,10 +388,88 @@ def('up_directory', 'dired-up-directory', function()
   require('dired').open(util.dirname(dir), { file = dir })
 end)
 
+def('create_file', 'create an empty file', function()
+  local b = B()
+  local dir = current_dir(b)
+  local name = util.ask('Create file (end with / for a directory): ', dir .. '/', 'file')
+  if not name or name == '' then
+    return
+  end
+  local is_dir = name:sub(-1) == '/'
+  local full = util.abs(name, dir)
+  if util.exists(full) then
+    util.err(('Cannot create %s: exists'):format(full))
+    return
+  end
+  local top = full
+  while not util.exists(util.dirname(top)) and util.dirname(top) ~= top do
+    top = util.dirname(top)
+  end
+  if is_dir then
+    pcall(vim.fn.mkdir, full, 'p')
+  else
+    pcall(vim.fn.mkdir, util.dirname(full), 'p')
+    local f, err = io.open(full, 'w')
+    if not f then
+      util.err(tostring(err))
+      return
+    end
+    f:close()
+  end
+  buf.refresh({ [util.dirname(top)] = true, [util.dirname(full)] = true })
+  buf.goto_path(b, top)
+end)
+def('open_cwd', 'open dired on the cwd', function()
+  require('dired').open(vim.fn.getcwd())
+end)
+def('cd', 'cd to this directory', function()
+  vim.cmd.cd(vim.fn.fnameescape(current_dir(B())))
+  util.msg('cd ' .. current_dir(B()))
+end)
+def('tcd', 'tcd to this directory', function()
+  vim.cmd.tcd(vim.fn.fnameescape(current_dir(B())))
+  util.msg('tcd ' .. current_dir(B()))
+end)
+def('toggle_hidden', 'show/hide dotfiles (toggles -a)', function()
+  local b = B()
+  local sw = vim.b[b].dired_switches or config.opts.switches
+  if sw:match('^%-%a*a') then
+    sw = sw:gsub('^(%-%a*)a', '%1', 1)
+  else
+    sw = sw:gsub('^(%-%a*)', '%1a', 1)
+  end
+  vim.b[b].dired_switches = sw
+  buf.revert(b)
+  util.msg('Dired listing switches: ' .. sw)
+end)
+def('toggle_trash', 'open the trash directory', function()
+  local trash = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share')) .. '/Trash/files'
+  if not util.is_dir(trash) then
+    trash = vim.env.HOME .. '/.Trash'
+  end
+  if util.is_dir(trash) then
+    require('dired').open(trash)
+  else
+    util.err('No trash directory found')
+  end
+end)
+
 ---------------------------------------------------------------- marking
 
 def('mark', 'dired-mark', function()
   marks.mark_lines(B(), cnt() or 1, '*')
+end)
+def('toggle_mark', 'mark / unmark this file, move down', function()
+  local b = B()
+  local n = cnt() or 1
+  local l = lnum()
+  for i = 0, n - 1 do
+    local e = buf.file_at(b, l + i)
+    if e then
+      buf.set_mark(b, l + i, e.mark == ' ' and '*' or ' ')
+    end
+  end
+  buf.goto_line(l + n)
 end)
 def('unmark', 'dired-unmark', function()
   marks.mark_lines(B(), cnt() or 1, ' ')
@@ -447,6 +536,20 @@ def('copy', 'dired-do-copy', function()
   local f = files(b)
   if f then
     fileops.copy(b, f)
+  end
+end)
+def('move', 'move files to a directory', function()
+  local b = B()
+  local f = files(b)
+  if f then
+    fileops.rename(b, f)
+  end
+end)
+def('rename_here', 'rename in place (several files: move)', function()
+  local b = B()
+  local f = files(b)
+  if f then
+    fileops.rename_here(b, f)
   end
 end)
 def('rename', 'dired-do-rename', function()
