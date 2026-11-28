@@ -30,6 +30,13 @@ function M.jump()
   return buf.open(dir, { file = name })
 end
 
+--- Project root for `dir` (default: the directory of the current file / dired buffer).
+--- Falls back to the cwd when no marker is found.
+function M.root(dir)
+  dir = dir or (buf.is_dired(0) and vim.b.dired_dir) or util.dirname(util.abs(api.nvim_buf_get_name(0) ~= '' and api.nvim_buf_get_name(0) or vim.fn.getcwd() .. '/x'))
+  return vim.fs.root(dir, config.opts.root_markers) or vim.fn.getcwd()
+end
+
 function M.setup(opts)
   config.setup(opts)
   buf.setup_hl()

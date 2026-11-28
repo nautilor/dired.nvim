@@ -366,6 +366,52 @@ dired.jump()
 eq(vim.b[0].dired_dir, dir .. '/src/lib', 'jump() still goes to the file directory')
 require('dired.config').opts.open_at_current_file = true
 
+-- goto_directory + completion
+local cp = require('dired.complete')
+local c1 = cp.candidates('', dir)
+ok(vim.tbl_contains(c1, 'src/') and vim.tbl_contains(c1, 'empty/') and not vim.tbl_contains(c1, 'README.md'), 'completion: dirs only')
+eq(cp.candidates('sr', dir), { 'src/' }, 'completion: prefix')
+local cf = cp.candidates('src/', dir, true)
+ok(vim.tbl_contains(cf, 'src/main.c') and vim.tbl_contains(cf, 'src/lib/'), 'completion: files too when asked')
+local seen_file, ordered = false, true
+for _, x in ipairs(cf) do
+  if x:sub(-1) ~= '/' then seen_file = true elseif seen_file then ordered = false end
+end
+ok(ordered, 'completion: directories listed before files')
+eq(cp.candidates('src/li', dir), { 'src/lib/' }, 'completion: nested keeps typed prefix')
+eq(cp.candidates('../', dir .. '/src')[1] ~= nil, true, 'completion: ../')
+ok(vim.tbl_contains(cp.candidates('src/lib/../', dir), 'src/lib/../lib/') , 'completion: through ..')
+dired.open(dir .. '/src/lib')
+local gb = api.nvim_get_current_buf()
+answers = { '../../empty' }
+actions.goto_directory.fn()
+eq(vim.b[0].dired_dir, dir .. '/empty', 'goto_directory resolves ../../ relative to current dired dir')
+eq(api.nvim_get_current_buf(), gb, 'goto_directory reuses buffer')
+answers = { '~' }
+actions.goto_directory.fn()
+eq(vim.b[0].dired_dir, vim.fn.expand('~'), 'goto_directory ~')
+
+vim.fn.mkdir(dir .. '/.git', 'p')
+-- project root prompt (starts from the root, like goto_directory)
+eq(dired.root(dir .. '/src/lib'), dir, 'root(): finds .git upwards') -- .git created below
+dired.open(dir .. '/src/lib')
+answers = { 'empty' }
+actions.project_root.fn()
+eq(vim.b[0].dired_dir, dir .. '/empty', 'project_root: path is relative to the root, not the current dir')
+dired.open(dir .. '/src/lib')
+answers = { '' }
+actions.project_root.fn()
+eq(vim.b[0].dired_dir, dir, 'project_root: empty answer goes to the root')
+-- a file at the end is opened
+dired.open(dir .. '/src/lib')
+answers = { 'src/main.c' }
+actions.project_root.fn()
+eq(api.nvim_buf_get_name(0), dir .. '/src/main.c', 'project_root: file is opened')
+dired.open(dir .. '/src')
+answers = { 'main.c' }
+actions.goto_directory.fn()
+eq(api.nvim_buf_get_name(0), dir .. '/src/main.c', 'goto_directory: file is opened')
+
 -- regexp conversion -----------------------------------------------------------
 local m = util.compile('\\.\\(?:png\\|jpg\\)\\\'')
 ok(m('a.png') and m('b.JPG') and not m('c.gif') and not m('a.png.bak'), 'emacs regexp -> vim')

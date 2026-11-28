@@ -51,8 +51,17 @@ Set `hijack_netrw = false` to keep netrw and only use `:Dired`.
 | `:Dired [dir]` | open `dir`; with no argument, the directory of the current file with the cursor on it (falls back to the cwd when the buffer has no file) |
 | `:DiredJump` | always the directory of the current file, cursor on it (`dired-jump`) |
 | `:DiredCwd` | always the cwd |
+| `:DiredRoot` | the project root of the current file (`root_markers`, default `.git` `.hg` `.svn`; the cwd if none) |
 
 Lua: `require('dired').open(dir)`, `.jump()`.
+
+`:Dired <path>` also completes with Tab, and inside a dired buffer a relative path is relative
+to the directory you are looking at (`:Dired ../../lib/type/algorithm`).
+
+In the path prompts (`gd`, `gp`), Tab completes directories and files and keeps cycling through the
+matches (`src/` + Tab: `lib/`, Tab: `main.c`, ...). When the match you are on is a directory, Enter
+accepts it without submitting (the prompt stays open), then Tab lists what is inside. So walking down
+a path is Tab to choose, Enter to enter, Tab to look; Enter again when nothing is open goes there.
 
 Prefer `:Dired` to mean "the cwd"? Set `open_at_current_file = false`; `:DiredJump` still gives you the file's directory.
 
@@ -98,6 +107,8 @@ Keys written with a space between them (`% m`) are typed without it (`%m`).
 | `v` | open read-only |
 | `a` | open and replace the dired buffer |
 | `j` | jump to a file by name |
+| `C-x p` | like `C-x d`, but the path starts at the project root (nearest parent with `.git`, see `root_markers`); Enter alone goes to the root |
+| `C-x d` | go to any path: type it, Tab completes relative to the current directory (`../../lib/type`); a file is opened, a directory is shown |
 | `<` / `>` | previous / next directory line |
 | `g` | refresh the listing (marks are kept) |
 | `q` | quit |
@@ -241,6 +252,8 @@ Like in the emacs preset, commands work on marked files, else the file under the
 |-----|------|----------|
 | `<Tab>` | mark / unmark the file, move down | |
 | `q` / `<Esc>` | close dired | |
+| `gp` | like `gd`, but the path starts at the project root (nearest parent with `.git`, see `root_markers`); Enter alone goes to the root | **g**o **p**roject |
+| `gd` | go to any path: type it, Tab completes relative to the current directory (`../../lib/type`); a file is opened, a directory is shown | **g**o **d**ir |
 | `U` / `~` | unmark all / toggle all marks | |
 | `g/` | mark by name regexp | like `:g/` |
 | `]m` / `[m` | next / previous marked file | |
@@ -284,6 +297,7 @@ by editing names), `gs` toggles name/date instead of asking, and `g.` toggles `l
 |--------|---------|----------------|
 | `switches` | `'-al'` | `dired-listing-switches` |
 | `hijack_netrw` | `true` | `nvim dir` / `:e dir` open dired |
+| `root_markers` | `{ '.git', '.hg', '.svn' }` | what marks a project root for `C-x p` / `gp` / `:DiredRoot` |
 | `open_at_current_file` | `true` | `:Dired` without argument opens the current file's directory (`false`: the cwd; `:DiredJump` stays available) |
 | `dwim_target` | `false` | `dired-dwim-target` |
 | `recursive_copies` | `'top'` | `dired-recursive-copies` (`false`/`'top'`/`'always'`) |

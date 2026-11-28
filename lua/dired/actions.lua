@@ -381,6 +381,43 @@ def('find_file_tab', 'open in new tab', find_current('tab'))
 def('view_file', 'dired-view-file', find_current('view'))
 def('find_alternate_file', 'dired-find-alternate-file', find_current('alternate'))
 
+--- Prompt for a path (Tab completes relative to `base`); directory -> dired, file -> open it.
+local function goto_prompt(b, base, empty_goes_to_base)
+  local complete = require('dired.complete')
+  complete.base = base
+  local path = complete.with_tab_descend(function()
+    return util.ask(('Go to (relative to %s): '):format(base), '', complete.cmdline)
+  end)
+  complete.base = nil
+  if not path then
+    return
+  end
+  if path == '' then
+    if not empty_goes_to_base then
+      return
+    end
+    path = '.'
+  end
+  local full = util.abs(path, base)
+  if util.is_dir(full) then
+    require('dired').open(full, { recycle = b })
+  elseif util.exists(full) then
+    visit(full, 'edit')
+  else
+    util.err('No such file or directory: ' .. full)
+  end
+end
+
+def('goto_directory', 'go to a path (Tab completes relative to this directory); a file is opened', function()
+  local b = B()
+  goto_prompt(b, current_dir(b), false)
+end)
+
+def('project_root', 'go to a path starting from the project root (Enter alone: the root)', function()
+  local b = B()
+  goto_prompt(b, require('dired').root(current_dir(b)), true)
+end)
+
 def('up_directory', 'dired-up-directory', function()
   local b = B()
   local dir = current_dir(b)
