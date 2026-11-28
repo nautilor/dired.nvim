@@ -6,19 +6,28 @@ local api = vim.api
 
 local M = {}
 
---- Open a dired buffer for `dir` (default: cwd) in the current window.
+--- Open a dired buffer for `dir` in the current window.
+--- Without `dir`: the directory of the current file when `open_at_current_file`
+--- is set (default), else the cwd.
 function M.open(dir, opts)
+  if dir == nil and config.opts.open_at_current_file then
+    return M.jump()
+  end
   return buf.open(dir or vim.fn.getcwd(), opts)
 end
 
 --- `dired-jump`: dired on the directory of the current file, cursor on the file.
+--- (a dired buffer stays on its own directory; other special buffers use the cwd)
 function M.jump()
   local name = api.nvim_buf_get_name(0)
+  if buf.is_dired(0) then
+    return buf.open(vim.b.dired_dir)
+  end
   if name == '' or vim.bo.buftype ~= '' then
-    return M.open(vim.fn.getcwd())
+    return buf.open(vim.fn.getcwd())
   end
   local dir = util.dirname(util.abs(name))
-  return M.open(dir, { file = name })
+  return buf.open(dir, { file = name })
 end
 
 function M.setup(opts)

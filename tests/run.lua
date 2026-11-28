@@ -351,6 +351,21 @@ vim.cmd('write')
 ok(util.exists(dir .. '/run2.sh') and not util.exists(dir .. '/runner.sh'), 'wdired :w commits')
 ok(vim.bo[b].buftype == 'nofile' and not vim.bo[b].modifiable, 'wdired :w leaves clean state')
 
+-- :Dired without argument -> current file's directory
+vim.cmd('only')
+vim.cmd('edit ' .. dir .. '/src/lib/util.h')
+dired.open()
+eq(vim.b[0].dired_dir, dir .. '/src/lib', 'open() starts at the current file directory')
+eq(buf.file_at(0, api.nvim_win_get_cursor(0)[1]).name, 'util.h', 'cursor on the current file')
+vim.cmd('edit ' .. dir .. '/src/lib/util.h')
+require('dired.config').opts.open_at_current_file = false
+dired.open()
+eq(vim.b[0].dired_dir, vim.fn.getcwd(), 'option off: open() uses the cwd')
+vim.cmd('edit ' .. dir .. '/src/lib/util.h')
+dired.jump()
+eq(vim.b[0].dired_dir, dir .. '/src/lib', 'jump() still goes to the file directory')
+require('dired.config').opts.open_at_current_file = true
+
 -- regexp conversion -----------------------------------------------------------
 local m = util.compile('\\.\\(?:png\\|jpg\\)\\\'')
 ok(m('a.png') and m('b.JPG') and not m('c.gif') and not m('a.png.bak'), 'emacs regexp -> vim')

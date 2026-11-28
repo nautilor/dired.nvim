@@ -46,8 +46,15 @@ Set `hijack_netrw = false` to keep netrw and only use `:Dired`.
 
 ## Commands
 
-`:Dired [dir]`, `:DiredJump` (= `dired-jump`, cursor lands on the current file).
-Lua: `require('dired').open(dir)`, `require('dired').jump()`.
+| Command | Does |
+|---------|------|
+| `:Dired [dir]` | open `dir`; with no argument, the directory of the current file with the cursor on it (falls back to the cwd when the buffer has no file) |
+| `:DiredJump` | always the directory of the current file, cursor on it (`dired-jump`) |
+| `:DiredCwd` | always the cwd |
+
+Lua: `require('dired').open(dir)`, `.jump()`.
+
+Prefer `:Dired` to mean "the cwd"? Set `open_at_current_file = false`; `:DiredJump` still gives you the file's directory.
 
 ## Keys
 
@@ -277,6 +284,7 @@ by editing names), `gs` toggles name/date instead of asking, and `g.` toggles `l
 |--------|---------|----------------|
 | `switches` | `'-al'` | `dired-listing-switches` |
 | `hijack_netrw` | `true` | `nvim dir` / `:e dir` open dired |
+| `open_at_current_file` | `true` | `:Dired` without argument opens the current file's directory (`false`: the cwd; `:DiredJump` stays available) |
 | `dwim_target` | `false` | `dired-dwim-target` |
 | `recursive_copies` | `'top'` | `dired-recursive-copies` (`false`/`'top'`/`'always'`) |
 | `recursive_deletes` | `'top'` | `dired-recursive-deletes` |

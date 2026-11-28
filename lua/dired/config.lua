@@ -34,6 +34,9 @@ M.defaults = {
     date = true,
     filetype = true,
   },
+  -- `:Dired` without argument opens the directory of the current file (cursor on it).
+  -- false = it opens the cwd; use :DiredJump for the file's directory then.
+  open_at_current_file = true,
   -- key preset: 'emacs' (1:1 dired-mode-map) | 'oil' (oil.nvim default keymaps)
   preset = 'emacs',
   -- with preset = 'oil': also bind vim-style keys for the dired file commands
