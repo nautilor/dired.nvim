@@ -460,8 +460,37 @@ function M.win_setup(win)
   vim.wo[win].concealcursor = 'nvic'
 end
 
+--- Wipe a dired buffer that nobody is looking at any more.
+function M.discard(buf)
+  if buf and api.nvim_buf_is_valid(buf) and M.is_dired(buf) and #vim.fn.win_findbuf(buf) == 0 then
+    pcall(api.nvim_buf_delete, buf, { force = true })
+  end
+end
+
+--- Point an existing dired buffer at another directory (navigating inside one buffer).
+local function repoint(buf, dir)
+  -- a plain buffer (e.g. from `:e dir`) may hold the name already
+  local plain = find_plain_dir_buffer(dir)
+  if plain and plain ~= buf then
+    pcall(api.nvim_buf_delete, plain, { force = true })
+  end
+  pcall(api.nvim_buf_set_name, buf, dir)
+  vim.b[buf].dired_dir = dir
+  M.modify(buf, function()
+    api.nvim_buf_set_lines(buf, 0, -1, false, { '  ' .. dir .. ':' })
+  end)
+  for _, w in ipairs(vim.fn.win_findbuf(buf)) do
+    api.nvim_win_call(w, function()
+      pcall(vim.cmd, 'normal! zE')
+    end)
+  end
+  M.revert(buf)
+end
+
 --- Open (or switch to) the dired buffer for `dir`.
---- opts: buf (reuse this buffer), file (put cursor on it), switches, win (false = don't show)
+--- opts: buf (reuse this buffer), file (put cursor on it), switches, win (false = don't show),
+---       recycle (a dired buffer shown only in this window: re-point it at `dir`
+---                instead of creating a new buffer; it is wiped if `dir` already has its own)
 function M.open(dir, opts)
   opts = opts or {}
   dir = util.abs(dir)
@@ -470,9 +499,19 @@ function M.open(dir, opts)
     return nil
   end
 
+  local recycle = opts.recycle
+  if recycle and not (M.is_dired(recycle) and #vim.fn.win_findbuf(recycle) <= 1) then
+    recycle = nil
+  end
+
   local buf = M.find_buffer(dir)
   local fresh = false
-  if not buf then
+  local moved = false
+  if not buf and recycle then
+    buf = recycle
+    repoint(buf, dir)
+    moved = true
+  elseif not buf then
     fresh = true
     buf = opts.buf or find_plain_dir_buffer(dir)
     if not buf then
@@ -495,10 +534,17 @@ function M.open(dir, opts)
     api.nvim_win_set_buf(win, buf)
     M.win_setup(win)
   end
+  if recycle and buf ~= recycle then
+    M.discard(recycle) -- we switched to a buffer that already existed for `dir`
+  end
 
   if fresh then
     M.revert(buf)
     require('dired.keymaps').apply(buf)
+    if not opts.file then
+      M.goto_first_file(buf, win)
+    end
+  elseif moved then
     if not opts.file then
       M.goto_first_file(buf, win)
     end

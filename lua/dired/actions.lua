@@ -342,14 +342,17 @@ local function visit(path, how)
     return
   end
   if util.is_dir(path) then
-    require('dired').open(path)
-  elseif how == 'view' then
+    require('dired').open(path, { recycle = old })
+    return
+  end
+  if how == 'view' then
     vim.cmd('view ' .. vim.fn.fnameescape(path))
   else
     vim.cmd.edit(vim.fn.fnameescape(path))
   end
-  if how == 'alternate' and api.nvim_buf_is_valid(old) and old ~= B() and #vim.fn.win_findbuf(old) == 0 then
-    pcall(api.nvim_buf_delete, old, { force = true })
+  -- the file replaced dired in this window: dired goes away (no :bnext back to it)
+  if old ~= B() then
+    buf.discard(old)
   end
 end
 
@@ -385,7 +388,7 @@ def('up_directory', 'dired-up-directory', function()
     util.msg('Already at root')
     return
   end
-  require('dired').open(util.dirname(dir), { file = dir })
+  require('dired').open(util.dirname(dir), { file = dir, recycle = b })
 end)
 
 def('create_file', 'create an empty file', function()

@@ -306,14 +306,27 @@ ok(#api.nvim_buf_get_extmarks(b, buf.ns, 0, -1, { details = true }) > 0, '( deco
 goto_name('empty')
 actions.find_file.fn()
 eq(vim.b[0].dired_dir, dir .. '/empty', 'RET opens subdir dired')
+eq(api.nvim_get_current_buf(), b, 'RET on dir reuses the same buffer')
+eq(api.nvim_buf_get_name(0), dir .. '/empty', 'recycled buffer renamed')
 actions.up_directory.fn()
-eq(vim.b[0].dired_dir, dir, '^ goes up (reusing buffer)')
+eq(vim.b[0].dired_dir, dir, '^ goes up')
+eq(api.nvim_get_current_buf(), b, '^ reuses the same buffer')
 eq(buf.file_at(0, api.nvim_win_get_cursor(0)[1]).name, 'empty', '^ puts cursor on dir we came from')
+eq(#vim.tbl_filter(function(x) return buf.is_dired(x) end, api.nvim_list_bufs()), 1, 'navigation leaves a single dired buffer')
 
--- visiting file -----------------------------------------------------------------
+-- visiting file: dired buffer must go away ---------------------------------------
 goto_name('run.sh')
 actions.find_file.fn()
 eq(api.nvim_buf_get_name(0), dir .. '/run.sh', 'RET visits file')
+ok(not api.nvim_buf_is_valid(b), 'dired buffer wiped after opening a file')
+dired.open(dir)
+b = api.nvim_get_current_buf()
+
+-- split keeps dired alive
+goto_name('run.sh')
+actions.find_file_split.fn()
+ok(api.nvim_buf_is_valid(b) and #vim.fn.win_findbuf(b) == 1, 'split keeps dired in the other window')
+vim.cmd('only')
 vim.cmd('buffer ' .. b)
 
 -- wdired ----------------------------------------------------------------------
